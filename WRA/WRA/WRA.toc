@@ -1,0 +1,71 @@
+## Interface: 30404
+## Title: WRA
+## Author: [Your Name/Alias Here]
+## Version: 0.1.0
+## Notes: Wow Rotation Assist - Helps with Tank and DPS rotations.
+## SavedVariables: WRADB
+## OptionalDeps: Ace3
+
+# Libraries (Essential First)
+Libs/LibStub/LibStub.lua
+Libs/CallbackHandler-1.0/CallbackHandler-1.0.xml
+Libs/AceAddon-3.0/AceAddon-3.0.xml
+Libs/AceEvent-3.0/AceEvent-3.0.xml
+Libs/AceTimer-3.0/AceTimer-3.0.xml
+Libs/AceDB-3.0/AceDB-3.0.xml
+Libs/AceLocale-3.0/AceLocale-3.0.xml
+Libs/AceConsole-3.0/AceConsole-3.0.xml
+Libs/AceGUI-3.0/AceGUI-3.0.xml
+Libs/AceConfig-3.0/AceConfig-3.0.xml
+Libs/AceDBOptions-3.0/AceDBOptions-3.0.xml
+Libs/LibRangeCheck-3.0/LibRangeCheck-3.0.lua
+Libs/LibClassicSwingTimerAPI/LibClassicSwingTimerAPI.lua
+# Libs/LibHash-1.0/LibHash-1.0.xml
+# Optional Libs (Add more as needed)
+# Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua
+# Libs/LibDBIcon-1.0/LibDBIcon-1.0.lua
+
+Locales\zhCN.lua
+
+# Core Files
+Core/WRA.lua
+Core/Constants.lua
+Core/ActionManager.lua
+Core/RotationEngine.lua
+
+# Common Utilities
+Common/Utils.lua
+Common/StateManager.lua
+Common/AuraMonitor.lua
+Common/CooldownTracker.lua
+Common/TTDTracker.lua
+Common/SwingTimer.lua
+Common/NameplateTracker.lua
+
+# Spec Handling
+Specs/SpecLoader.lua
+
+# UI Files (Order matters)
+UI/OptionsPanel.lua
+# Add other spec option panels here
+UI/QuickOptions.lua
+UI/Display_Icons.lua
+UI/DisplayManager.lua
+UI/QuickConfig.lua
+
+# Encounter Handling
+Encounters/EncounterBase.lua
+Encounters/EncounterManager.lua
+
+# Locales
+# Locales/zhCN.lua # Add other locales later
+
+# Spec files (Load after Core/Common/UI usually)
+Specs/FuryWarrior.lua
+
+# Specs/FireMage.lua
+# Specs/ProtectionWarrior.lua
+
+# Specific Encounter Modules (Load last or dynamically)
+# Encounters/Naxx/KelThuzad.lua
+# Encounters/Uld/Ignis.lua
