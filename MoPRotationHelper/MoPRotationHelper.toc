@@ -1,0 +1,16 @@
+## Interface: 50400
+## Title: MoP Rotation Helper
+## Notes: Suggests next ability based on custom rotation priority (no automation). For MoP Classic.
+## Author: CursorAI
+## Version: 0.4.0
+## SavedVariables: MoPRHDB
+
+Cache.lua
+Tracker.lua
+Utils.lua
+Config.lua
+UI.lua
+Nameplates.lua
+RuleEngine.lua
+Core.lua
+Rotations/Monk_Windwalker.lua
