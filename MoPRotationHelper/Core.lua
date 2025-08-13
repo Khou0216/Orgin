@@ -230,6 +230,13 @@ SlashCmdList["MOPRH"] = function(msg)
     local on = v == "on"
     MoPRH:Set("debug", on)
     print("MoPRH: debug:", on and "on" or "off")
+  elseif cmd == "enemies" then
+    local np = MoPRH.Nameplates
+    local tr = MoPRH.Tracker
+    local npCount = (np and np.CountEnemies) and np:CountEnemies() or 0
+    local trCount = (tr and tr.EstimatedEnemyCount) and tr:EstimatedEnemyCount() or 0
+    local finalCount = math.max(npCount, trCount)
+    print("MoPRH enemies: nameplates=", npCount, "tracker=", trCount, "final=", finalCount)
   else
     print("MoPRH commands:")
     print("/mrh lock | unlock")
@@ -241,5 +248,6 @@ SlashCmdList["MOPRH"] = function(msg)
     print("/mrh profile new <name> | use <name>")
     print("/mrh export")
     print("/mrh debug on|off")
+    print("/mrh enemies")
   end
 end
