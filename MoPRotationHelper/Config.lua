@@ -13,6 +13,26 @@ local DEFAULTS = {
   mode = "single", -- "single" | "aoe"
   profiles = {}, -- [specId] = { active = "Default", sets = { [name] = { rules = {...} } } }
   debug = false,
+  ahk = {
+    enabled = false,
+    posX = 20,
+    posY = 20,
+    size = 6,
+    gcdGate = true,
+    combatGate = true,
+    targetGate = false,
+    gcdThreshold = 0.06,
+    binds = {},     -- [spellId or name] = "1".."6"
+    colors = {
+      ["1"] = {255, 0, 0},
+      ["2"] = {255, 128, 0},
+      ["3"] = {255, 255, 0},
+      ["4"] = {0, 255, 0},
+      ["5"] = {0, 128, 255},
+      ["6"] = {160, 32, 240},
+    },
+    offColor = {0, 0, 0},
+  },
 }
 
 local function applyDefaults(db, defaults)

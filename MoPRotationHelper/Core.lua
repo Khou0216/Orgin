@@ -7,6 +7,7 @@ local Utils = MoPRH.Utils
 local RE = MoPRH.RuleEngine
 local Cache = MoPRH.Cache
 local Tracker = MoPRH.Tracker
+local Automation = MoPRH.Automation
 
 -- Rotation registry keyed by specId
 MoPRH.Rotations = MoPRH.Rotations or {}
@@ -118,6 +119,9 @@ local function evaluateAndRender()
   local shouldShow = ctx.inCombat or ctx.db.showWhenOutOfCombat
   if not shouldShow then
     UI:Hide()
+    if Automation and Automation.UpdateFromSuggestion then
+      Automation:UpdateFromSuggestion(nil, ctx)
+    end
     return
   end
 
@@ -134,10 +138,15 @@ local function evaluateAndRender()
   local forced = MoPRH:GetForced()
   if forced then
     local primary = { spellId = forced.spellId, spellName = forced.spellName, note = forced.note or "手动" }
-    -- Shift original suggestions to secondary/tertiary
     UI:Update(primary, p or s, (p and s) and t or s)
+    if Automation and Automation.UpdateFromSuggestion then
+      Automation:UpdateFromSuggestion(primary, ctx)
+    end
   else
     UI:Update(p, s, t)
+    if Automation and Automation.UpdateFromSuggestion then
+      Automation:UpdateFromSuggestion(p, ctx)
+    end
   end
 
   if ctx.db.debug and (p or forced) then
@@ -190,6 +199,7 @@ driver:SetScript("OnEvent", function(_, event, ...)
     if name == addonName then
       MoPRH:InitDB()
       UI:Init()
+      if Automation and Automation.Init then Automation:Init() end
       UI:SetLocked(MoPRH:GetDB().locked)
       UI:SetScale(MoPRH:GetDB().scale)
     end
@@ -325,6 +335,12 @@ SlashCmdList["MOPRH"] = function(msg)
   elseif cmd == "pushclear" then
     MoPRH:ClearForced()
     print("MoPRH: cleared manual queue")
+  elseif cmd == "ahk" then
+    if Automation and Automation.Slash then
+      Automation:Slash(args, 2)
+    else
+      print("AHK module unavailable")
+    end
   else
     print("MoPRH commands:")
     print("/mrh lock | unlock")
@@ -339,5 +355,6 @@ SlashCmdList["MOPRH"] = function(msg)
     print("/mrh enemies")
     print("/mrh push <spellId|spellName> [ttl] [note]")
     print("/mrh pushclear")
+    print("/mrh ahk ... (on|off|pos|size|bind|unbind|col|gate|show)")
   end
 end
