@@ -120,6 +120,13 @@ RE.RegisterCondition("enemyCountGTE", function(ctx, cond)
   return tracker:EstimatedEnemyCount() >= need
 end)
 
+RE.RegisterCondition("nameplateEnemyCountGTE", function(ctx, cond)
+  local np = MoPRH.Nameplates
+  if not np or not np.CountEnemies then return false end
+  local need = tonumber(cond.value or 0) or 0
+  return np:CountEnemies() >= need
+end)
+
 -- Serializer remains the same
 local function serializeCond(c)
   if c.type == "whenAll" or c.type == "whenAny" then

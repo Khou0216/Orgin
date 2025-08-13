@@ -160,8 +160,9 @@ function MoPRH:EnsureDefaultProfiles()
       -- manual window; keep enabled
       { type = "spellReady", spellId = SPELL.TigereyeBrew },
     }},
-    { action = SPELL.SpinningCraneKick, note = "顺劈(3+)\n或手动AoE模式", enabled = true, when = {
+    { action = SPELL.SpinningCraneKick, note = "顺劈(3+)\n姓名板/命中估算/或手动AoE模式", enabled = true, when = {
       { type = "whenAny", list = {
+        { type = "nameplateEnemyCountGTE", value = 3 },
         { type = "enemyCountGTE", value = 3 },
         { type = "modeIs", value = "aoe" },
       }},
