@@ -5,9 +5,10 @@ local MoPRH = _G.MoPRH
 local UI = MoPRH.UI
 local Utils = MoPRH.Utils
 local RE = MoPRH.RuleEngine
+local Cache = MoPRH.Cache
 
 -- Rotation registry keyed by specId
-MoPRH.Rotations = {}
+MoPRH.Rotations = MoPRH.Rotations or {}
 
 function MoPRH.RegisterRotation(specId, rotation)
   MoPRH.Rotations[specId] = rotation
@@ -49,6 +50,9 @@ local function buildContext()
 end
 
 local function evaluateAndRender()
+  -- start a fresh cache tick
+  if Cache and Cache.BeginTick then Cache:BeginTick() end
+
   local ctx = buildContext()
   local rules = ctx.specId and MoPRH:GetRules(ctx.specId) or nil
   local rotation = MoPRH.Rotations[ctx.specId]
@@ -69,6 +73,16 @@ local function evaluateAndRender()
   end
 
   UI:Update(p, s, t)
+
+  if ctx.db.debug and p then
+    if not evaluateAndRender._dbgAt or (GetTime() - evaluateAndRender._dbgAt) > 1.5 then
+      evaluateAndRender._dbgAt = GetTime()
+      local n1 = p and (GetSpellInfo(p.spellId) or p.spellId) or "-"
+      local n2 = s and (GetSpellInfo(s.spellId) or s.spellId) or "-"
+      local n3 = t and (GetSpellInfo(t.spellId) or t.spellId) or "-"
+      print("MoPRH debug next:", n1, ",", n2, ",", n3)
+    end
+  end
 end
 
 local driver = CreateFrame("Frame")
@@ -204,6 +218,11 @@ SlashCmdList["MOPRH"] = function(msg)
     else
       print("Export not available")
     end
+  elseif cmd == "debug" then
+    local v = string.lower(args[2] or "off")
+    local on = v == "on"
+    MoPRH:Set("debug", on)
+    print("MoPRH: debug:", on and "on" or "off")
   else
     print("MoPRH commands:")
     print("/mrh lock | unlock")
@@ -214,5 +233,6 @@ SlashCmdList["MOPRH"] = function(msg)
     print("/mrh rules list | up <i> | down <i> | toggle <i>")
     print("/mrh profile new <name> | use <name>")
     print("/mrh export")
+    print("/mrh debug on|off")
   end
 end

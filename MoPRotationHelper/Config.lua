@@ -12,6 +12,7 @@ local DEFAULTS = {
   showCooldowns = true,
   mode = "single", -- "single" | "aoe"
   profiles = {}, -- [specId] = { active = "Default", sets = { [name] = { rules = {...} } } }
+  debug = false,
 }
 
 local function applyDefaults(db, defaults)

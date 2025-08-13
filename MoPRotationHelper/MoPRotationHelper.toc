@@ -5,6 +5,7 @@
 ## Version: 0.2.0
 ## SavedVariables: MoPRHDB
 
+Cache.lua
 Utils.lua
 Config.lua
 UI.lua

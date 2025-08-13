@@ -4,70 +4,29 @@ local MoPRH = _G.MoPRH
 
 local Utils = MoPRH.Utils
 
-MoPRH.RuleEngine = {}
+MoPRH.RuleEngine = MoPRH.RuleEngine or {}
 local RE = MoPRH.RuleEngine
 
--- Supported condition types:
--- - spellReady { spellId }
--- - auraMissing { unit, spellId }
--- - auraRemainingLTE { unit, spellId, seconds }
--- - powerGTE { power = "chi"|"energy", value }
--- - targetHpLTE { percent }
--- - playerHpLTE { percent }
--- - isMoving { value = true|false }
--- - modeIs { value = "single"|"aoe" }
--- - inCombat { value = true|false }
--- - cdsRequired { value = true }  -- passes only if showCooldowns is ON when value is true
+RE.Conditions = RE.Conditions or {}
 
-local function evalCondition(ctx, cond)
-  local t = cond.type
-  if t == "spellReady" then
-    local ready = Utils.IsSpellReady(cond.spellId)
-    return ready == true
-  elseif t == "auraMissing" then
-    local aura = Utils.GetAura(cond.unit or "target", cond.spellId, cond.filter)
-    return aura == nil
-  elseif t == "auraRemainingLTE" then
-    local aura = Utils.GetAura(cond.unit or "target", cond.spellId, cond.filter)
-    local s = tonumber(cond.seconds) or 0
-    if not aura then return true end
-    return (aura.expiresIn or 0) <= s
-  elseif t == "powerGTE" then
-    local p = string.lower(cond.power or "")
-    local v = tonumber(cond.value or 0) or 0
-    if p == "chi" then return (ctx.power.chi or 0) >= v end
-    if p == "energy" then return (ctx.power.energy or 0) >= v end
-    return false
-  elseif t == "targetHpLTE" then
-    local p = tonumber(cond.percent or 0) or 0
-    return (ctx.targetHp or 100) <= p
-  elseif t == "playerHpLTE" then
-    local hp = Utils.GetUnitHealthPercent("player")
-    local p = tonumber(cond.percent or 0) or 0
-    return hp <= p
-  elseif t == "isMoving" then
-    local v = cond.value == true
-    return (ctx.isMoving == true) == v
-  elseif t == "modeIs" then
-    return (ctx.db.mode or "single") == (cond.value or "single")
-  elseif t == "inCombat" then
-    local v = cond.value == true
-    return (ctx.inCombat == true) == v
-  elseif t == "cdsRequired" then
-    if cond.value == true then
-      return ctx.db.showCooldowns == true
-    else
-      return true
-    end
-  end
-  return false
+function RE.RegisterCondition(name, evaluator)
+  RE.Conditions[name] = evaluator
+end
+
+local function evalByType(ctx, cond)
+  local fn = RE.Conditions[cond.type]
+  if not fn then return false end
+  local ok = false
+  local success, result = pcall(fn, ctx, cond)
+  if success then ok = result == true else ok = false end
+  return ok
 end
 
 local function allConditionsPass(ctx, rule)
   if rule.enabled == false then return false end
   if not rule.when or #rule.when == 0 then return true end
   for _, cond in ipairs(rule.when) do
-    if not evalCondition(ctx, cond) then return false end
+    if not evalByType(ctx, cond) then return false end
   end
   return true
 end
@@ -87,7 +46,65 @@ function RE.EvaluateRules(ctx, rules)
   return suggestions[1], suggestions[2], suggestions[3]
 end
 
--- Simple serializer: outputs a compact Lua literal table for rules
+-- Register built-in conditions
+RE.RegisterCondition("spellReady", function(ctx, cond)
+  return Utils.IsSpellReady(cond.spellId) == true
+end)
+
+RE.RegisterCondition("auraMissing", function(ctx, cond)
+  local aura = Utils.GetAura(cond.unit or "target", cond.spellId, cond.filter)
+  return aura == nil
+end)
+
+RE.RegisterCondition("auraRemainingLTE", function(ctx, cond)
+  local aura = Utils.GetAura(cond.unit or "target", cond.spellId, cond.filter)
+  local s = tonumber(cond.seconds) or 0
+  if not aura then return true end
+  return (aura.expiresIn or 0) <= s
+end)
+
+RE.RegisterCondition("powerGTE", function(ctx, cond)
+  local p = string.lower(cond.power or "")
+  local v = tonumber(cond.value or 0) or 0
+  if p == "chi" then return (ctx.power.chi or 0) >= v end
+  if p == "energy" then return (ctx.power.energy or 0) >= v end
+  return false
+end)
+
+RE.RegisterCondition("targetHpLTE", function(ctx, cond)
+  local p = tonumber(cond.percent or 0) or 0
+  return (ctx.targetHp or 100) <= p
+end)
+
+RE.RegisterCondition("playerHpLTE", function(ctx, cond)
+  local hp = Utils.GetUnitHealthPercent("player")
+  local p = tonumber(cond.percent or 0) or 0
+  return hp <= p
+end)
+
+RE.RegisterCondition("isMoving", function(ctx, cond)
+  local v = cond.value == true
+  return (ctx.isMoving == true) == v
+end)
+
+RE.RegisterCondition("modeIs", function(ctx, cond)
+  return (ctx.db.mode or "single") == (cond.value or "single")
+end)
+
+RE.RegisterCondition("inCombat", function(ctx, cond)
+  local v = cond.value == true
+  return (ctx.inCombat == true) == v
+end)
+
+RE.RegisterCondition("cdsRequired", function(ctx, cond)
+  if cond.value == true then
+    return ctx.db.showCooldowns == true
+  else
+    return true
+  end
+end)
+
+-- Serializer remains the same
 local function serializeCond(c)
   local parts = { string.format("type=\"%s\"", c.type or "") }
   if c.spellId then table.insert(parts, string.format("spellId=%d", c.spellId)) end
