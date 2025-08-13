@@ -15,6 +15,63 @@ function MoPRH.RegisterRotation(specId, rotation)
   MoPRH.Rotations[specId] = rotation
 end
 
+-- Manual high-priority queue
+MoPRH.state = MoPRH.state or { forcedQueue = {} }
+
+local function resolveSpellRef(spellRef)
+  if type(spellRef) == "number" then
+    local name = GetSpellInfo(spellRef)
+    return spellRef, name
+  else
+    local name, _, _, _, _, _, spellId = GetSpellInfo(spellRef)
+    return spellId, name or spellRef
+  end
+end
+
+function MoPRH:PushForced(spellRef, ttl, note)
+  local id, name = resolveSpellRef(spellRef)
+  if not id and not name then return false end
+  local lifespan = tonumber(ttl or 6) or 6
+  table.insert(self.state.forcedQueue, 1, {
+    spellId = id,
+    spellName = name,
+    note = note or "手动",
+    expiresAt = GetTime() + lifespan,
+  })
+  return true
+end
+
+function MoPRH:ClearForced()
+  self.state.forcedQueue = {}
+end
+
+local function pruneForced()
+  local q = MoPRH.state.forcedQueue
+  if not q or #q == 0 then return end
+  local t = GetTime()
+  for i = #q, 1, -1 do
+    if not q[i].expiresAt or q[i].expiresAt <= t then table.remove(q, i) end
+  end
+end
+
+function MoPRH:GetForced()
+  pruneForced()
+  return self.state.forcedQueue[1]
+end
+
+local function popIfCasted(spellID)
+  local top = MoPRH:GetForced()
+  if not top then return end
+  if top.spellId and top.spellId == spellID then
+    table.remove(MoPRH.state.forcedQueue, 1)
+    return
+  end
+  local name = GetSpellInfo(spellID)
+  if name and top.spellName and top.spellName == name then
+    table.remove(MoPRH.state.forcedQueue, 1)
+  end
+end
+
 local function getPlayerSpecId()
   if not GetSpecialization then return nil end
   local specIndex = GetSpecialization()
@@ -73,15 +130,28 @@ local function evaluateAndRender()
     p, s, t = rotation:Evaluate(ctx)
   end
 
-  UI:Update(p, s, t)
+  -- Manual forced insertion has highest priority
+  local forced = MoPRH:GetForced()
+  if forced then
+    local primary = { spellId = forced.spellId, spellName = forced.spellName, note = forced.note or "手动" }
+    -- Shift original suggestions to secondary/tertiary
+    UI:Update(primary, p or s, (p and s) and t or s)
+  else
+    UI:Update(p, s, t)
+  end
 
-  if ctx.db.debug and p then
+  if ctx.db.debug and (p or forced) then
     if not evaluateAndRender._dbgAt or (GetTime() - evaluateAndRender._dbgAt) > 1.5 then
       evaluateAndRender._dbgAt = GetTime()
+      local nF = forced and (forced.spellName or (forced.spellId and GetSpellInfo(forced.spellId)) or forced.spellId) or nil
       local n1 = p and (GetSpellInfo(p.spellId) or p.spellId) or "-"
       local n2 = s and (GetSpellInfo(s.spellId) or s.spellId) or "-"
       local n3 = t and (GetSpellInfo(t.spellId) or t.spellId) or "-"
-      print("MoPRH debug next:", n1, ",", n2, ",", n3)
+      if forced then
+        print("MoPRH debug next (forced):", nF, "| queue=", #MoPRH.state.forcedQueue)
+      else
+        print("MoPRH debug next:", n1, ",", n2, ",", n3)
+      end
     end
   end
 end
@@ -112,6 +182,7 @@ driver:RegisterEvent("PLAYER_REGEN_ENABLED")
 driver:RegisterEvent("PLAYER_ENTERING_WORLD")
 driver:RegisterEvent("PLAYER_GUID_CHANGED")
 driver:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+driver:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 
 driver:SetScript("OnEvent", function(_, event, ...)
   if event == "ADDON_LOADED" then
@@ -127,6 +198,9 @@ driver:SetScript("OnEvent", function(_, event, ...)
     C_Timer.After(1, function() evaluateAndRender() end)
   elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
     if Tracker and Tracker.OnCombatLogEvent then Tracker:OnCombatLogEvent() end
+  elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+    local unit, _, spellID = ...
+    if unit == "player" and spellID then popIfCasted(spellID) end
   else
     -- trigger refresh on next tick
   end
@@ -237,6 +311,20 @@ SlashCmdList["MOPRH"] = function(msg)
     local trCount = (tr and tr.EstimatedEnemyCount) and tr:EstimatedEnemyCount() or 0
     local finalCount = math.max(npCount, trCount)
     print("MoPRH enemies: nameplates=", npCount, "tracker=", trCount, "final=", finalCount)
+  elseif cmd == "push" then
+    local ref = args[2]
+    if not ref then print("Usage: /mrh push <spellId|spellName> [ttlSeconds] [note...]") return end
+    local ttl = tonumber(args[3]) or 6
+    local note
+    if #args >= 4 then
+      note = table.concat(args, " ", 4)
+    end
+    local asNumber = tonumber(ref)
+    local ok = MoPRH:PushForced(asNumber or ref, ttl, note)
+    print(ok and "MoPRH: pushed manual skill" or "MoPRH: push failed")
+  elseif cmd == "pushclear" then
+    MoPRH:ClearForced()
+    print("MoPRH: cleared manual queue")
   else
     print("MoPRH commands:")
     print("/mrh lock | unlock")
@@ -249,5 +337,7 @@ SlashCmdList["MOPRH"] = function(msg)
     print("/mrh export")
     print("/mrh debug on|off")
     print("/mrh enemies")
+    print("/mrh push <spellId|spellName> [ttl] [note]")
+    print("/mrh pushclear")
   end
 end
