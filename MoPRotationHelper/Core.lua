@@ -6,6 +6,7 @@ local UI = MoPRH.UI
 local Utils = MoPRH.Utils
 local RE = MoPRH.RuleEngine
 local Cache = MoPRH.Cache
+local Tracker = MoPRH.Tracker
 
 -- Rotation registry keyed by specId
 MoPRH.Rotations = MoPRH.Rotations or {}
@@ -108,6 +109,9 @@ driver:RegisterEvent("SPELL_UPDATE_COOLDOWN")
 driver:RegisterEvent("PLAYER_TARGET_CHANGED")
 driver:RegisterEvent("PLAYER_REGEN_DISABLED")
 driver:RegisterEvent("PLAYER_REGEN_ENABLED")
+driver:RegisterEvent("PLAYER_ENTERING_WORLD")
+driver:RegisterEvent("PLAYER_GUID_CHANGED")
+driver:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 
 driver:SetScript("OnEvent", function(_, event, ...)
   if event == "ADDON_LOADED" then
@@ -118,8 +122,11 @@ driver:SetScript("OnEvent", function(_, event, ...)
       UI:SetLocked(MoPRH:GetDB().locked)
       UI:SetScale(MoPRH:GetDB().scale)
     end
-  elseif event == "PLAYER_LOGIN" then
+  elseif event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_GUID_CHANGED" then
+    if Tracker and Tracker.SetPlayerGUID then Tracker:SetPlayerGUID(UnitGUID("player")) end
     C_Timer.After(1, function() evaluateAndRender() end)
+  elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
+    if Tracker and Tracker.OnCombatLogEvent then Tracker:OnCombatLogEvent() end
   else
     -- trigger refresh on next tick
   end

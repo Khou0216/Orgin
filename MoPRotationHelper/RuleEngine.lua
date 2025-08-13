@@ -14,6 +14,15 @@ function RE.RegisterCondition(name, evaluator)
 end
 
 local function evalByType(ctx, cond)
+  if cond.type == "whenAll" then
+    if not cond.list or #cond.list == 0 then return true end
+    for _, c in ipairs(cond.list) do if not evalByType(ctx, c) then return false end end
+    return true
+  elseif cond.type == "whenAny" then
+    if not cond.list or #cond.list == 0 then return true end
+    for _, c in ipairs(cond.list) do if evalByType(ctx, c) then return true end end
+    return false
+  end
   local fn = RE.Conditions[cond.type]
   if not fn then return false end
   local ok = false
@@ -104,8 +113,20 @@ RE.RegisterCondition("cdsRequired", function(ctx, cond)
   end
 end)
 
+RE.RegisterCondition("enemyCountGTE", function(ctx, cond)
+  local tracker = MoPRH.Tracker
+  if not tracker or not tracker.EstimatedEnemyCount then return false end
+  local need = tonumber(cond.value or 0) or 0
+  return tracker:EstimatedEnemyCount() >= need
+end)
+
 -- Serializer remains the same
 local function serializeCond(c)
+  if c.type == "whenAll" or c.type == "whenAny" then
+    local list = {}
+    for _, sub in ipairs(c.list or {}) do table.insert(list, serializeCond(sub)) end
+    return string.format("{type=\"%s\",list={%s}}", c.type, table.concat(list, ","))
+  end
   local parts = { string.format("type=\"%s\"", c.type or "") }
   if c.spellId then table.insert(parts, string.format("spellId=%d", c.spellId)) end
   if c.unit then table.insert(parts, string.format("unit=\"%s\"", c.unit)) end

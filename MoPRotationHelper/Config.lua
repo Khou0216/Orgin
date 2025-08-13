@@ -157,11 +157,14 @@ function MoPRH:EnsureDefaultProfiles()
     }},
     { action = SPELL.TigereyeBrew, note = "10层猛虎之眼", enabled = true, when = {
       { type = "cdsRequired", value = true },
-      -- Lacking stack query in generic engine, this is left as manual toggle; keep rule enabled for manual use
+      -- manual window; keep enabled
       { type = "spellReady", spellId = SPELL.TigereyeBrew },
     }},
-    { action = SPELL.SpinningCraneKick, note = "顺劈", enabled = true, when = {
-      { type = "modeIs", value = "aoe" },
+    { action = SPELL.SpinningCraneKick, note = "顺劈(3+)\n或手动AoE模式", enabled = true, when = {
+      { type = "whenAny", list = {
+        { type = "enemyCountGTE", value = 3 },
+        { type = "modeIs", value = "aoe" },
+      }},
       { type = "spellReady", spellId = SPELL.SpinningCraneKick },
     }},
     { action = SPELL.BlackoutKick, note = "消耗真气", enabled = true, when = {
