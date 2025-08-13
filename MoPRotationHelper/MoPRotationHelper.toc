@@ -2,11 +2,12 @@
 ## Title: MoP Rotation Helper
 ## Notes: Suggests next ability based on custom rotation priority (no automation). For MoP Classic.
 ## Author: CursorAI
-## Version: 0.1.0
+## Version: 0.2.0
 ## SavedVariables: MoPRHDB
 
-Core.lua
 Utils.lua
 Config.lua
 UI.lua
+RuleEngine.lua
+Core.lua
 Rotations/Monk_Windwalker.lua

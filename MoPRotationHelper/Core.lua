@@ -4,6 +4,7 @@ local MoPRH = _G.MoPRH
 
 local UI = MoPRH.UI
 local Utils = MoPRH.Utils
+local RE = MoPRH.RuleEngine
 
 -- Rotation registry keyed by specId
 MoPRH.Rotations = {}
@@ -49,6 +50,7 @@ end
 
 local function evaluateAndRender()
   local ctx = buildContext()
+  local rules = ctx.specId and MoPRH:GetRules(ctx.specId) or nil
   local rotation = MoPRH.Rotations[ctx.specId]
 
   local shouldShow = ctx.inCombat or ctx.db.showWhenOutOfCombat
@@ -59,12 +61,13 @@ local function evaluateAndRender()
 
   UI:Show()
 
-  if not rotation or not rotation.Evaluate then
-    UI:Update(nil, nil, nil)
-    return
+  local p, s, t
+  if rules and #rules > 0 and RE and RE.EvaluateRules then
+    p, s, t = RE.EvaluateRules(ctx, rules)
+  elseif rotation and rotation.Evaluate then
+    p, s, t = rotation:Evaluate(ctx)
   end
 
-  local p, s, t = rotation:Evaluate(ctx)
   UI:Update(p, s, t)
 end
 
@@ -104,9 +107,20 @@ driver:SetScript("OnEvent", function(_, event, ...)
   elseif event == "PLAYER_LOGIN" then
     C_Timer.After(1, function() evaluateAndRender() end)
   else
-    -- All other events simply trigger a refresh next tick
+    -- trigger refresh on next tick
   end
 end)
+
+-- Helpers to print
+local function printRules(specId)
+  local rules = MoPRH:GetRules(specId)
+  print("MoPRH rules (" .. tostring(#rules) .. "):")
+  for i, r in ipairs(rules) do
+    local name = GetSpellInfo(r.action) or tostring(r.action)
+    local mark = (r.enabled == false) and "[X]" or "[ ]"
+    print(string.format("%d. %s %s - %s", i, mark, name, r.note or ""))
+  end
+end
 
 -- Slash commands
 SLASH_MOPRH1 = "/mrh"
@@ -145,6 +159,51 @@ SlashCmdList["MOPRH"] = function(msg)
     local on = v == "on"
     MoPRH:Set("showWhenOutOfCombat", on)
     print("MoPRH: show out of combat:", on and "on" or "off")
+  elseif cmd == "rules" then
+    local sub = string.lower(args[2] or "")
+    local specId = getPlayerSpecId()
+    if sub == "list" then
+      printRules(specId)
+    elseif sub == "up" or sub == "down" then
+      local idx = tonumber(args[3])
+      if not idx then print("Usage: /mrh rules up|down <index>") return end
+      if MoPRH:MoveRule(specId, idx, sub) then printRules(specId) else print("Move failed") end
+    elseif sub == "toggle" then
+      local idx = tonumber(args[3])
+      if not idx then print("Usage: /mrh rules toggle <index>") return end
+      if MoPRH:ToggleRule(specId, idx) then printRules(specId) else print("Toggle failed") end
+    else
+      print("/mrh rules list | up <i> | down <i> | toggle <i>")
+    end
+  elseif cmd == "profile" then
+    local sub = string.lower(args[2] or "")
+    local specId = getPlayerSpecId()
+    if sub == "new" then
+      local name = args[3] or "Custom"
+      if MoPRH:NewProfile(specId, name) then print("Created and using profile:", name) else print("Profile exists:", name) end
+    elseif sub == "use" then
+      local name = args[3]
+      if not name then print("Usage: /mrh profile use <name>") return end
+      MoPRH:SetActiveProfile(specId, name)
+      print("Using profile:", name)
+    else
+      local active, prof = MoPRH:GetActiveProfile(specId)
+      print("Active profile:", active)
+    end
+  elseif cmd == "export" then
+    local specId = getPlayerSpecId()
+    local rules = MoPRH:GetRules(specId)
+    if RE and RE.SerializeRules then
+      local txt = RE.SerializeRules(rules)
+      local chunk = 230
+      print("MoPRH export begin:")
+      for i = 1, #txt, chunk do
+        print(string.sub(txt, i, i + chunk - 1))
+      end
+      print("MoPRH export end.")
+    else
+      print("Export not available")
+    end
   else
     print("MoPRH commands:")
     print("/mrh lock | unlock")
@@ -152,5 +211,8 @@ SlashCmdList["MOPRH"] = function(msg)
     print("/mrh mode single|aoe")
     print("/mrh cds on|off")
     print("/mrh showooc on|off")
+    print("/mrh rules list | up <i> | down <i> | toggle <i>")
+    print("/mrh profile new <name> | use <name>")
+    print("/mrh export")
   end
 end
