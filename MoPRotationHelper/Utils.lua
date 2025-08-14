@@ -154,3 +154,10 @@ function Utils.ForecastEnergy(seconds)
   if val < 0 then val = 0 end
   return val, max, regen
 end
+
+function Utils.ForecastRage(seconds)
+  -- Rage forecast is highly situational; use current rage as conservative estimate
+  local cur = UnitPower("player", Enum and Enum.PowerType and Enum.PowerType.Rage or 1)
+  local max = UnitPowerMax("player", Enum and Enum.PowerType and Enum.PowerType.Rage or 1)
+  return cur, max, 0
+end

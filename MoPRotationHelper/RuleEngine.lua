@@ -154,6 +154,9 @@ RE.RegisterCondition("resourceForecastGTE", function(ctx, cond)
   if res == "energy" then
     local val = MoPRH.Utils.ForecastEnergy(sec)
     return (val or 0) >= want
+  elseif res == "rage" then
+    local val = MoPRH.Utils.ForecastRage(sec)
+    return (val or 0) >= want
   end
   return false
 end)
