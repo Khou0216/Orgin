@@ -8,6 +8,7 @@ local RE = MoPRH.RuleEngine
 local Cache = MoPRH.Cache
 local Tracker = MoPRH.Tracker
 local Automation = MoPRH.Automation
+local Macro = MoPRH.Macro
 
 -- Rotation registry keyed by specId
 MoPRH.Rotations = MoPRH.Rotations or {}
@@ -341,6 +342,12 @@ SlashCmdList["MOPRH"] = function(msg)
     else
       print("AHK module unavailable")
     end
+  elseif cmd == "macro" then
+    if Macro and Macro.Slash then
+      Macro:Slash(args, 2)
+    else
+      print("Macro module unavailable")
+    end
   else
     print("MoPRH commands:")
     print("/mrh lock | unlock")
@@ -356,5 +363,6 @@ SlashCmdList["MOPRH"] = function(msg)
     print("/mrh push <spellId|spellName> [ttl] [note]")
     print("/mrh pushclear")
     print("/mrh ahk ... (on|off|pos|size|bind|unbind|col|gate|show)")
+    print("/mrh macro make|update")
   end
 end
