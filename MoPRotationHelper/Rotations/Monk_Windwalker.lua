@@ -78,12 +78,16 @@ function WW:Evaluate(ctx)
 
   -- If energy will cap soon, spend chi to avoid overcapping energy (simple heuristic)
   do
-    local eNow = ctx.power.energy or 0
-    local eMax = ctx.power.maxEnergy or 100
-    local eIn1s = Utils.ForecastEnergy(1.0) or eNow
-    if eIn1s >= eMax - 5 and ctx.power.chi >= 3 then
-      local usable = Utils.IsSpellReady(SPELL.BlackoutKick)
-      if usable then table.insert(suggestions, suggest(SPELL.BlackoutKick, "防止能量溢出")) end
+    local cfg = MoPRH:GetDB().pooling.energy or { enabled = true, overcapBuffer = 5 }
+    if cfg.enabled then
+      local eNow = ctx.power.energy or 0
+      local eMax = ctx.power.maxEnergy or 100
+      local eIn1s = Utils.ForecastEnergy(1.0) or eNow
+      local buffer = cfg.overcapBuffer or 5
+      if eIn1s >= eMax - buffer and ctx.power.chi >= 3 then
+        local usable = Utils.IsSpellReady(SPELL.BlackoutKick)
+        if usable then table.insert(suggestions, suggest(SPELL.BlackoutKick, "防止能量溢出")) end
+      end
     end
   end
 
@@ -114,12 +118,14 @@ function WW:Evaluate(ctx)
     if usable then table.insert(suggestions, suggest(SPELL.ChiWave, "天赋")) end
   end
 
-  -- Jab as builder：若能量≥50直接回真气；若较低，则预测0.6s后能达标再使用（池能）
+  -- Jab as builder：使用池能参数（threshold/forecastSec）
   do
+    local cfg = MoPRH:GetDB().pooling.energy or { enabled = true, threshold = 50, forecastSec = 0.6 }
+    local threshold = cfg.threshold or 50
+    local win = cfg.forecastSec or 0.6
     local eNow = ctx.power.energy or 0
-    local eFuture = Utils.ForecastEnergy(0.6) or eNow
-    local threshold = 50
-    if eNow >= threshold or eFuture >= threshold then
+    local eFuture = Utils.ForecastEnergy(win) or eNow
+    if (not cfg.enabled and eNow >= threshold) or (cfg.enabled and (eNow >= threshold or eFuture >= threshold)) then
       local usable = Utils.IsSpellReady(SPELL.Jab)
       if usable then table.insert(suggestions, suggest(SPELL.Jab, eNow >= threshold and "回真气" or "池能后回真气")) end
     end

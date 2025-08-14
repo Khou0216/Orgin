@@ -33,6 +33,19 @@ local DEFAULTS = {
     },
     offColor = {0, 0, 0},
   },
+  pooling = {
+    energy = {
+      enabled = true,
+      threshold = 50,      -- use builder only when >= threshold (or will be >= threshold after forecastSec)
+      forecastSec = 0.6,   -- lookahead window
+      overcapBuffer = 5,   -- consider spending chi if energy will be max - buffer in ~1s
+    },
+    rage = {
+      enabled = false,
+      threshold = 30,
+      forecastSec = 0.6,
+    },
+  },
 }
 
 local function applyDefaults(db, defaults)

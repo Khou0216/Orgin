@@ -362,6 +362,27 @@ SlashCmdList["MOPRH"] = function(msg)
     if not ok or type(rules) ~= "table" then print("Import: not a valid table") return end
     MoPRH:SetRules(specId, rules)
     print("MoPRH: rules imported", #rules)
+  elseif cmd == "pool" then
+    local res = string.lower(args[2] or "")
+    if res ~= "energy" and res ~= "rage" then
+      print("/mrh pool energy|rage on|off | thresh <n> | win <sec> | buffer <n>")
+      return
+    end
+    local sub = string.lower(args[3] or "")
+    local p = MoPRH:GetDB().pooling[res]
+    if sub == "on" or sub == "off" then
+      p.enabled = (sub == "on")
+    elseif sub == "thresh" then
+      p.threshold = tonumber(args[4]) or p.threshold
+    elseif sub == "win" then
+      p.forecastSec = tonumber(args[4]) or p.forecastSec
+    elseif sub == "buffer" then
+      p.overcapBuffer = tonumber(args[4]) or (p.overcapBuffer or 0)
+    else
+      print("Pool", res, "enabled=", p.enabled, "thresh=", p.threshold, "win=", p.forecastSec, "buffer=", p.overcapBuffer)
+      return
+    end
+    print("Pool", res, "enabled=", p.enabled, "thresh=", p.threshold, "win=", p.forecastSec, "buffer=", p.overcapBuffer)
   else
     print("MoPRH commands:")
     print("/mrh lock | unlock")
@@ -379,5 +400,6 @@ SlashCmdList["MOPRH"] = function(msg)
     print("/mrh pushclear")
     print("/mrh ahk ... (on|off|pos|size|bind|unbind|col|gate|show)")
     print("/mrh macro make|update")
+    print("/mrh pool energy|rage on|off | thresh <n> | win <sec> | buffer <n>")
   end
 end
