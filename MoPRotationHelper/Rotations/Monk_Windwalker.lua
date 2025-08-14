@@ -76,6 +76,17 @@ function WW:Evaluate(ctx)
     if usable then table.insert(suggestions, suggest(SPELL.FistsOfFury, "风火雷电")) end
   end
 
+  -- If energy will cap soon, spend chi to avoid overcapping energy (simple heuristic)
+  do
+    local eNow = ctx.power.energy or 0
+    local eMax = ctx.power.maxEnergy or 100
+    local eIn1s = Utils.ForecastEnergy(1.0) or eNow
+    if eIn1s >= eMax - 5 and ctx.power.chi >= 3 then
+      local usable = Utils.IsSpellReady(SPELL.BlackoutKick)
+      if usable then table.insert(suggestions, suggest(SPELL.BlackoutKick, "防止能量溢出")) end
+    end
+  end
+
   -- Tigereye Brew at 10 stacks or execute window
   if showCDs then
     local teb = Utils.GetAura("player", AURA.TigereyeBrewBuff, "HELPFUL")
@@ -103,10 +114,15 @@ function WW:Evaluate(ctx)
     if usable then table.insert(suggestions, suggest(SPELL.ChiWave, "天赋")) end
   end
 
-  -- Jab as builder if energy allows
-  if ctx.power.energy >= 50 then
-    local usable = Utils.IsSpellReady(SPELL.Jab)
-    if usable then table.insert(suggestions, suggest(SPELL.Jab, "回真气")) end
+  -- Jab as builder：若能量≥50直接回真气；若较低，则预测0.6s后能达标再使用（池能）
+  do
+    local eNow = ctx.power.energy or 0
+    local eFuture = Utils.ForecastEnergy(0.6) or eNow
+    local threshold = 50
+    if eNow >= threshold or eFuture >= threshold then
+      local usable = Utils.IsSpellReady(SPELL.Jab)
+      if usable then table.insert(suggestions, suggest(SPELL.Jab, eNow >= threshold and "回真气" or "池能后回真气")) end
+    end
   end
 
   -- Return up to 3

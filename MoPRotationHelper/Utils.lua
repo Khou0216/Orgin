@@ -127,3 +127,30 @@ function Utils.GetCharges(spellIdOrName)
     return { charges = charges or 0, max = maxCharges or 0, recharge = rechargeRemains }
   end)
 end
+
+function Utils.GetEnergyRegenPerSec()
+  local key = Cache:Key({"energyRegen"})
+  return Cache:Remember(key, function()
+    -- Try API if available (retail has GetPowerRegenForPowerType; fallback to haste formula)
+    local regen
+    if GetPowerRegenForPowerType then
+      local r = GetPowerRegenForPowerType(Enum and Enum.PowerType and Enum.PowerType.Energy or 3)
+      regen = r
+    end
+    if not regen then
+      local haste = GetHaste and (GetHaste() or 0) or 0
+      regen = 10 * (1 + haste / 100)
+    end
+    return regen or 10
+  end)
+end
+
+function Utils.ForecastEnergy(seconds)
+  local cur = UnitPower("player", Enum and Enum.PowerType and Enum.PowerType.Energy or 3)
+  local max = UnitPowerMax("player", Enum and Enum.PowerType and Enum.PowerType.Energy or 3)
+  local regen = Utils.GetEnergyRegenPerSec()
+  local val = cur + (regen * math.max(0, seconds or 0))
+  if val > max then val = max end
+  if val < 0 then val = 0 end
+  return val, max, regen
+end

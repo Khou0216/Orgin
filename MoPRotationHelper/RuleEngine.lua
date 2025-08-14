@@ -147,6 +147,17 @@ RE.RegisterCondition("spellCooldownLTE", function(ctx, cond)
   return cd <= sec
 end)
 
+RE.RegisterCondition("resourceForecastGTE", function(ctx, cond)
+  local res = string.lower(cond.power or "energy")
+  local sec = tonumber(cond.seconds or cond.time or 0) or 0
+  local want = tonumber(cond.value or 0) or 0
+  if res == "energy" then
+    local val = MoPRH.Utils.ForecastEnergy(sec)
+    return (val or 0) >= want
+  end
+  return false
+end)
+
 -- Serializer remains the same
 local function serializeCond(c)
   if c.type == "whenAll" or c.type == "whenAny" then
