@@ -17,6 +17,7 @@ local function ensureDefaults(db)
   if a.gcdGate == nil then a.gcdGate = true end
   if a.combatGate == nil then a.combatGate = true end
   if a.targetGate == nil then a.targetGate = false end
+  if a.channelGate == nil then a.channelGate = true end
   if not a.gcdThreshold then a.gcdThreshold = 0.06 end
   a.binds = a.binds or {}      -- [spellId or name] = "1".."6"..
   a.colors = a.colors or {     -- key -> {r,g,b} 0-255
@@ -78,6 +79,7 @@ local function gatingAllows(ctx)
   local a = MoPRH:GetDB().ahk
   if a.combatGate and not ctx.inCombat then return false end
   if a.targetGate and not ctx.targetExists then return false end
+  if a.channelGate and Utils.IsChanneling() then return false end
   if a.gcdGate then
     local gcd = Utils.GetGCDRemaining()
     if gcd > (a.gcdThreshold or 0.06) then return false end
@@ -132,6 +134,7 @@ local function printUsage()
   print("/mrh ahk unbind <spellId|name>")
   print("/mrh ahk col <key> <R> <G> <B>")
   print("/mrh ahk gate gcd|combat|target on|off")
+  print("/mrh ahk gate channel on|off")
   print("/mrh ahk show")
 end
 
@@ -185,6 +188,7 @@ function AHK:Slash(args, startIdx)
     if which == "gcd" then a.gcdGate = val
     elseif which == "combat" then a.combatGate = val
     elseif which == "target" then a.targetGate = val
+    elseif which == "channel" then a.channelGate = val
     else print("Usage: /mrh ahk gate gcd|combat|target on|off") return end
     print("MoPRH AHK gate:", which, val and "on" or "off")
   elseif sub == "show" then

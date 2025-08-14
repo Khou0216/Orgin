@@ -348,6 +348,20 @@ SlashCmdList["MOPRH"] = function(msg)
     else
       print("Macro module unavailable")
     end
+  elseif cmd == "import" then
+    local specId = getPlayerSpecId()
+    if not specId then print("Import: cannot detect spec") return end
+    local src = table.concat(args, " ", 2)
+    if not src or src == "" then
+      print("Usage: /mrh import <rules_table_text>")
+      return
+    end
+    local chunk, err = loadstring("return " .. src)
+    if not chunk then print("Import parse error:", err) return end
+    local ok, rules = pcall(chunk)
+    if not ok or type(rules) ~= "table" then print("Import: not a valid table") return end
+    MoPRH:SetRules(specId, rules)
+    print("MoPRH: rules imported", #rules)
   else
     print("MoPRH commands:")
     print("/mrh lock | unlock")
@@ -358,6 +372,7 @@ SlashCmdList["MOPRH"] = function(msg)
     print("/mrh rules list | up <i> | down <i> | toggle <i>")
     print("/mrh profile new <name> | use <name>")
     print("/mrh export")
+    print("/mrh import <rules_table>")
     print("/mrh debug on|off")
     print("/mrh enemies")
     print("/mrh push <spellId|spellName> [ttl] [note]")

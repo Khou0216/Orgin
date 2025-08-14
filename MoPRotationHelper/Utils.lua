@@ -106,3 +106,24 @@ end
 function Utils.InCombat()
   return UnitAffectingCombat("player") == true
 end
+
+function Utils.IsChanneling()
+  local name = UnitChannelInfo and UnitChannelInfo("player")
+  return name ~= nil
+end
+
+function Utils.GetCharges(spellIdOrName)
+  local ref = spellIdOrName
+  local key = Cache:Key({"charges", tostring(ref)})
+  return Cache:Remember(key, function()
+    local charges, maxCharges, start, duration
+    if GetSpellCharges then
+      charges, maxCharges, start, duration = GetSpellCharges(ref)
+    end
+    local rechargeRemains = 0
+    if start and duration then
+      rechargeRemains = math.max(0, (start + duration) - now())
+    end
+    return { charges = charges or 0, max = maxCharges or 0, recharge = rechargeRemains }
+  end)
+end

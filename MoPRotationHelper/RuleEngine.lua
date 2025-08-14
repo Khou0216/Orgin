@@ -127,6 +127,26 @@ RE.RegisterCondition("nameplateEnemyCountGTE", function(ctx, cond)
   return np:CountEnemies() >= need
 end)
 
+RE.RegisterCondition("auraStacksGTE", function(ctx, cond)
+  local aura = Utils.GetAura(cond.unit or "player", cond.spellId, cond.filter)
+  local need = tonumber(cond.value or cond.stacks or 0) or 0
+  if not aura then return false end
+  return (aura.count or 0) >= need
+end)
+
+RE.RegisterCondition("chargesGTE", function(ctx, cond)
+  local info = Utils.GetCharges(cond.spellId)
+  local need = tonumber(cond.value or 1) or 1
+  return (info.max > 0) and (info.charges or 0) >= need
+end)
+
+RE.RegisterCondition("spellCooldownLTE", function(ctx, cond)
+  local ready, cd = Utils.IsSpellReady(cond.spellId)
+  if ready then return true end
+  local sec = tonumber(cond.value or 0) or 0
+  return cd <= sec
+end)
+
 -- Serializer remains the same
 local function serializeCond(c)
   if c.type == "whenAll" or c.type == "whenAny" then
